@@ -1,5 +1,94 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Harry Whelchel]]></title><description><![CDATA[Ruby, Javascript, and More.]]></description><link>http://my-ghost-blog.com/</link><generator>Ghost v0.4.2</generator><lastBuildDate>Sun, 18 May 2014 01:19:17 GMT</lastBuildDate><atom:link href="http://my-ghost-blog.com/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Recursion in Ruby]]></title><description><![CDATA[<p>Studying Ruby and object oriented programming at Dev Bootcamp we have been working with exercises that lend themselves to recursive thinking. Because recursion was challenging yet often elegant I researched the subject further in the context of the Ruby language. For more here is an excellent resource on <a href='http://kaibun.net/blog/2010/03/17/simple-thought-about-recursion-in-Ruby/' >recursion in Ruby</a> by Jean-Denis Vauguet.</p>
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Harry Whelchel]]></title><description><![CDATA[Ruby, Javascript, and More.]]></description><link>http://127.0.0.1:2368/</link><generator>Ghost v0.4.2</generator><lastBuildDate>Sun, 18 May 2014 03:02:36 GMT</lastBuildDate><atom:link href="http://127.0.0.1:2368/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Streams in JavaScript]]></title><description><![CDATA[<p><em>Time is but the stream I go a-fishing in.</em></p>
+
+<p>-Henry David Thoreau</p>
+
+<p>Recently I was rereading <a href='http://mitpress.mit.edu/sicp/full-text/book/book.html' >Structure and Interpretation of Computer Programs</a> by Abelson and Sussman and was hooked by the section on streams. Streams allow one to reason about stateful phenomena while mitigating "some of the complexities of modeling state".  </p>
+
+<p>A stream is a data structure representing the history of values for a system across time. Imagine physics' <a href='http://en.wikipedia.org/wiki/World_line' >world line</a> concept applied to any system or phenomena. If one thinks about the life of an apple over time it ages. But if one considers the entire history of the apple through time that function is constant with respect to time. I decided it would be fun to implement this concept in JavaScript.</p>
+
+<h4 id="implementation">Implementation</h4>
+
+<p>To easily model a stream implement it as a delayed list. This means the <strong>head</strong> of the list will be the current value and the <strong>tail</strong> will be a <strong>promise</strong> to evaluate the next element in the stream. In SICP the authors use the delay method to convert a tail into a promise and then use the force method to evaluate the promise.</p>
+
+<pre><code>function Stream(head, tail) {  
+    this.headValue = head;
+    this.tailValue = this.delay(tail);
+}
+
+Stream.prototype = {  
+  delay: function(tail) {
+    return tail();
+  },
+  force: function(delayedTail){
+    return delayedTail();
+  }
+}
+</code></pre>
+
+<h4 id="application">Application</h4>
+
+<p>Because streams are sequences we can still use sequence methods like enumerating, filtering, accumulating, and mapping but because streams delay evaluation we can perform these manipulations on sequences that are large or infinite in size. </p>
+
+<p>For example I can take a stream representing all integers beginning with the number 2 and run it through the Sieve of Eratosthenes to generate a stream of the prime numbers.</p>
+
+<pre><code>Stream.integersStartingFrom = function(num) {  
+  return new Stream(num, function(){
+    return integersStartingFrom(num += 1);
+  });
+};
+Stream.prototype.sieve = function() {  
+    var self = this;
+    return new Stream(self.head(), function() {
+      return self.tail().filter(function(num) {
+        return !willDivide(self.head(), num);
+        }).sieve();
+    });
+  }
+
+var primes = Stream.integersStartingFrom(2).sieve();  
+console.log(primes.item(50)); // 233  
+</code></pre>
+
+<p>Streams allow the developer to cleanly separate and intuitively reason about these types of tasks across data collections.</p>
+
+<h4 id="improvements">Improvements</h4>
+
+<p>One early improvement to make in a streams library is to memoize the delay method that generates the promise. Rather than reevaluating the tail everytime use a closure to store whether the tail has been evaluated in the past and if so return that result.</p>
+
+<pre><code>Stream.prototype = {
+
+ delay: function(tail) {
+    return this._memoTail(tail);
+  },
+
+  _memoTail: function(tail){
+    var hasRun = false;
+    var result;
+    return function(){
+      if(!hasRun) {
+        result = tail();
+        hasRun = true;
+        return result;
+      } else {
+        return result;
+      }
+    };
+  }
+}
+</code></pre>
+
+<h4 id="practicalusecases">Practical use cases</h4>
+
+<p>Infinite streams of data can be found in many fields from physics, finance, and engineering. In physics as mentioned the world line is the concept of reasoning about an elements' entire history through spacetime. In finance there are many financial assets that exhibit stream like behavior such as <a href='http://en.wikipedia.org/wiki/Perpetuity' >perpetuities</a> and <a href='http://en.wikipedia.org/wiki/Market_data' >stock market data</a>. In engineering they can be found in the <a href='http://en.wikipedia.org/wiki/Fourier_series' >fourier series</a> which has application in electrical engineering, optics, acoustics, and more.</p>
+
+<h4 id="nextsteps">Next steps</h4>
+
+<p>I would like to explore using the stream data structure to model some of the practical applications listed above namely the modeling of financial streams and fourier series.</p>
+
+<h4 id="thecode">The code</h4>
+
+<p>The full code used can be found on my github in the <a href='https://github.com/hwhelchel/streams' >streams</a> repository. I would also like to mention the <a href='https://github.com/dionyziz/stream.js' >streams.js</a> library by dionyziz which helped jump start my implementation of streams in JavaScript.</p>]]></description><link>http://127.0.0.1:2368/streams-in-javascript/</link><guid isPermaLink="false">603f9b69-0e0f-4ef2-93c4-3326750cc1de</guid><dc:creator><![CDATA[Harry Whelchel]]></dc:creator><pubDate>Sun, 18 May 2014 02:23:40 GMT</pubDate></item><item><title><![CDATA[Recursion in Ruby]]></title><description><![CDATA[<p>Studying Ruby and object oriented programming at Dev Bootcamp we have been working with exercises that lend themselves to recursive thinking. Because recursion was challenging yet often elegant I researched the subject further in the context of the Ruby language. For more here is an excellent resource on <a href='http://kaibun.net/blog/2010/03/17/simple-thought-about-recursion-in-Ruby/' >recursion in Ruby</a> by Jean-Denis Vauguet.</p>
 
 <h2 id="whatisrecursion">What is Recursion?</h2>
 
@@ -137,7 +226,7 @@ until end_program == "quit"
     return end_program
   end
 end  
-</code></pre>]]></description><link>http://my-ghost-blog.com/recursion-in-ruby/</link><guid isPermaLink="false">e195f71d-3ccc-4830-9006-fd2aafa6954b</guid><dc:creator><![CDATA[Harry Whelchel]]></dc:creator><pubDate>Sun, 18 May 2014 01:02:44 GMT</pubDate></item><item><title><![CDATA[Sorting Algorithms in Ruby]]></title><description><![CDATA[<p>Having enjoyed excellent posts on sorting algorithms I wanted to share my implementation of common sorting algorithms in Ruby. There are some great <a href='http://www.sorting-algorithms.com/' >visualizations of sorting algorithms</a> especially on Mike Bostock's blog such as the <a href='http://bost.ocks.org/mike/shuffle/' >Fisher-Yates Shuffle</a>, <a href='http://bl.ocks.org/mbostock/1243323' >merge sort</a>, and <a href='http://bl.ocks.org/mbostock/1582075' >quick sort</a>. Taking a leaf out of Jesse La Russo's <a href='http://jlarusso.github.io/blog/2013/04/30/sorting-algorithms-in-ruby/' >blog</a> below are my implementations of common sorting algorithms in Ruby.</p>
+</code></pre>]]></description><link>http://127.0.0.1:2368/recursion-in-ruby/</link><guid isPermaLink="false">e195f71d-3ccc-4830-9006-fd2aafa6954b</guid><dc:creator><![CDATA[Harry Whelchel]]></dc:creator><pubDate>Sun, 18 May 2014 01:02:44 GMT</pubDate></item><item><title><![CDATA[Sorting Algorithms in Ruby]]></title><description><![CDATA[<p>Having enjoyed excellent posts on sorting algorithms I wanted to share my implementation of common sorting algorithms in Ruby. There are some great <a href='http://www.sorting-algorithms.com/' >visualizations of sorting algorithms</a> especially on Mike Bostock's blog such as the <a href='http://bost.ocks.org/mike/shuffle/' >Fisher-Yates Shuffle</a>, <a href='http://bl.ocks.org/mbostock/1243323' >merge sort</a>, and <a href='http://bl.ocks.org/mbostock/1582075' >quick sort</a>. Taking a leaf out of Jesse La Russo's <a href='http://jlarusso.github.io/blog/2013/04/30/sorting-algorithms-in-ruby/' >blog</a> below are my implementations of common sorting algorithms in Ruby.</p>
 
 <h3 id="insertionsort">Insertion Sort</h3>
 
@@ -352,4 +441,4 @@ end
   quick_sort(less) + [pivot] + quick_sort(greater)
 
 end  
-</code></pre>]]></description><link>http://my-ghost-blog.com/sorting-algorithms-in-ruby/</link><guid isPermaLink="false">582c4890-87fa-42ab-9b83-0e00cbf2f113</guid><dc:creator><![CDATA[Harry Whelchel]]></dc:creator><pubDate>Sun, 18 May 2014 01:02:35 GMT</pubDate></item></channel></rss>
+</code></pre>]]></description><link>http://127.0.0.1:2368/sorting-algorithms-in-ruby/</link><guid isPermaLink="false">582c4890-87fa-42ab-9b83-0e00cbf2f113</guid><dc:creator><![CDATA[Harry Whelchel]]></dc:creator><pubDate>Sun, 18 May 2014 01:02:35 GMT</pubDate></item></channel></rss>
